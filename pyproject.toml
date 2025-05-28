@@ -38,7 +38,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/ulrikforsgren/stress-testing"
-Bug Tracker = "https://github.com/ulrikforsgren/stress-testing/issues"
+Issues = "https://github.com/ulrikforsgren/stress-testing/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
