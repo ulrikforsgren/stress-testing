@@ -90,7 +90,9 @@ async def restconf_request(args, client, host, op, resource, data=None,
         try:
             if data is not None:
                 data = data.encode('utf-8')
-            async with client.request(method, url, headers=HEADERS_JSON,
+            headers = HEADERS_JSON.copy()
+            add_authentication(headers, 'admin', 'admin')
+            async with client.request(method, url, headers=headers,
                                     data=data, params=query_parameters) as response:
                 if response.status in [201, 204]:
                     data = None  # No content is expected.
