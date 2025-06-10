@@ -64,16 +64,3 @@ async def test_modify_read_timeout(jsonrpc_client):
     assert updated_timeout == new_timeout, f"Expected timeout value {new_timeout}, but got {updated_timeout}"
     
     print("\n===== Read-Timeout Modification Test Completed Successfully =====")
-
-
-def main():
-    """Run the test using pytest"""
-    pytest_args = [
-        "-xvs",
-        __file__,
-    ]
-    return pytest.main(pytest_args)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

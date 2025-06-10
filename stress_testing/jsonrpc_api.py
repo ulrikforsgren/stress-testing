@@ -173,6 +173,20 @@ class JSONRPC:
         response = await self._call("get_values", params)
         return response['values']
     
+    async def delete(self, th: int, path: str) -> Dict[str, Any]:
+        """
+        Delete a node in the data model.
+        
+        Args:
+            th: Transaction handle (integer)
+        Returns:
+            {} | {"warnings": <array of strings>}
+        """
+        params = {"th": th, "path": path}
+        response = await self._call("delete", params)
+        return response
+
+
     async def get_attrs(self, th: int, path: str, names: list) -> Dict[str, Any]:
         """
         Get attributes for a node in the data model.
@@ -213,26 +227,7 @@ class JSONRPC:
         params = {"mode": mode}
         result = await self._call("new_trans", params)
         return result['th']
-    
-    async def load(self, th: int, path: str, data: Union[str, dict], format: str = "json", mode: str = "merge") -> Dict[str, Any]:
-        """
-        Load configuration data into the specified path.
-        
-        Args:
-            th: Transaction handle (integer)
-            path: Target path in the data model
-            data: The configuration data to load
-            format: Data format ('json', 'xml', or 'cli')
-            mode: Load mode, one of 'merge', 'replace', or 'delete'
-            
-        Returns:
-            Result of the load operation
-        """
-        if isinstance(data, dict):
-            data = json.dumps(data)
-        params = {"th": th, "path": path, "data": data, "format": format, "mode": mode}
-        return await self._call("load", params)
-    
+
     async def commit(self, th: int, flags: Optional[list] = None) -> Dict[str, Any]:
         """
         Commit a transaction.
@@ -267,22 +262,83 @@ class JSONRPC:
             params["flags"] = flags
         return await self._call("apply", params)
     
+    async def delete_trans(self, th: int) -> Dict[str, Any]:
+        """
+        Delete a transaction.
+        
+        Args:
+            th: Transaction handle (integer) to delete
+            
+        Returns:
+            Result of the delete_trans operation
+        """
+        params = {"th": th}
+        return await self._call("delete_trans", params)
+
+    async def load(self, th: int, path: str, data: Union[str, dict], format: str = "json", mode: str = "merge") -> Dict[str, Any]:
+        """
+        Load configuration data into the specified path.
+        
+        Args:
+            th: Transaction handle (integer)
+            path: Target path in the data model
+            data: The configuration data to load
+            format: Data format ('json', 'xml', or 'cli')
+            mode: Load mode, one of 'merge', 'replace', or 'delete'
+            
+        Returns:
+            Result of the load operation
+        """
+        if isinstance(data, dict):
+            data = json.dumps(data)
+        params = {"th": th, "path": path, "data": data, "format": format, "mode": mode}
+        return await self._call("load", params)
+        
+    async def show_config(self, th: int, path: str, format: str = "json", 
+                          depth: int = -1, operational: bool = False) -> Dict[str, Any]:
+        """
+        Show the configuration at the specified path.
+        
+        Args:
+            th: Transaction handle (integer)
+            path: Path to the configuration element to show
+            format: Output format ('json', 'xml', or 'cli')
+            depth: Maximum depth to show (-1 for all levels)
+            operational: Whether to include operational data
+            
+        Returns:
+            The configuration at the specified path
+        """
+        params = {
+            "th": th,
+            "path": path,
+            "format": format
+        }
+        
+        if depth != -1:
+            params["depth"] = depth
+            
+        if operational:
+            params["operational"] = operational
+            
+        return await self._call("show_config", params)
+    
     async def get_schema(self, th: int, path: Optional[str] = None, namespace: Optional[str] = None,
                        levels: int = -1, insert_values: bool = False, 
                        evaluate_when_entries: bool = False, stop_on_list: bool = True,
                        cdm_namespace: bool = False) -> Dict[str, Any]:
-        """schema levels to retrieve (-1 for all levels)
+        """
+        Get schema information for a specific path in the data model.
 
-
-
-
-
-
-
-            self.client = None            namespace: Optional namespace for the schema query            path: Optional path to the schema node            th: Transaction handle (integer)        Args:                Get schema information for a specific path in the data model.            insert_values: Whether to insert values in the schema
+        Args:
+            namespace: Optional namespace for the schema query
+            path: Optional path to the schema node
+            th: Transaction handle (integer)
+            insert_values: Whether to insert values in the schema
             evaluate_when_entries: Whether to evaluate 'when' entries
             stop_on_list: Whether to stop schema traversal on list nodes
             cdm_namespace: Whether to use CDM namespace
+            levels: Number of schema levels to retrieve (-1 for all levels)
             
         Returns:
             Schema information for the specified path
