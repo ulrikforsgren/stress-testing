@@ -5,7 +5,6 @@ from base64 import b64encode
 import json
 import aiohttp
 from yarl import URL
-import sys
 import logging
 
 logger = logging.getLogger(__name__)
