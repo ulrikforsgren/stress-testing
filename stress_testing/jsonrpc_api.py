@@ -365,35 +365,58 @@ class JSONRPC:
         if self.client and hasattr(self.client, 'session') and self.client.session:
             await self.client.session.close()
             self.client = None
-
-
-    async def request(self, op, resource, data=None, jdata=None,
-                      resource_type='data', params=None):
-        if op =='create':
-            pass
-        elif op == 'read':
-            pass
-        elif op == 'update':
-            pass
-        elif op == 'delete':
-            pass
-        elif op == 'action':
-            pass
-    
-    async def run_action(self, th: int, path: str, input_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        
+    async def run_action(self, th: int, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Run an action at the specified path.
         
         Args:
             th: Transaction handle (integer)
             path: Path to the action in the data model
-            input_params: Optional input parameters for the action
+            params: Optional input parameters for the action
             
         Returns:
             Result of the action operation, typically containing output parameters
         """
-        params = {"th": th, "path": path}
-        if input_params:
-            params["params"] = input_params
+        action_params = {"th": th, "path": path}
+        if params:
+            action_params["params"] = params
             
-        return await self._call("run_action", params)
+        return await self._call("run_action", action_params)
+    
+    async def request(self, op, resource, data=None, jdata=None,
+                      resource_type='data', params=None):
+        try:
+            if op =='create':
+                th = await self.new_trans(mode='read_write')
+                result = await self.load(th, path=resource, data=data, format='json', mode='create')
+                apply_result = await self.apply(th)
+                del_th_result = await self.delete_trans(th)
+            elif op == 'read':
+                th = await self.new_trans(mode='read')
+                result = await self.show_config(th, path=resource, format='json', depth=-1, operational=False)
+                del_th_result = await self.delete_trans(th)
+            elif op == 'update':
+                th = await self.new_trans(mode='read_write')
+                result = await self.load(th, path=resource, data=data, format='json', mode='merge')
+                apply_result = await self.apply(th)
+                del_th_result = await self.delete_trans(th)
+            elif op == 'delete':
+                th = await self.new_trans(mode='read_write')
+                result = await self.de(th, path=resource, params=jdata)
+                apply_result = await self.apply(th)
+                del_th_result = await self.delete_trans(th)
+            elif op == 'action':
+                th = await self.new_trans(mode='read')
+                result = await self.run_action(th, path=resource, params=jdata)
+                del_th_result = await self.delete_trans(th)
+        except ProtocolError as e:
+            if e.args[0] == -32000 and e.args[1] == 'Data not found':
+                return None
+            raise
+        except Exception as e:
+            if self.debug:
+                print(f"Error in request {op} {resource}: {str(e)}")
+            raise
+
+
