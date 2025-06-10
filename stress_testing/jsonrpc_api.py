@@ -52,7 +52,45 @@ class JSONRPC:
             await self.client.session.close()
             self.client = None
     
-    
+
+    async def _call(self, method: str, params: Optional[dict]=None) -> Any:
+        """
+        Generic method to make JSON-RPC calls with consistent error handling.
+        
+        Args:
+            method: The JSON-RPC method name to call
+            params: Optional parameters for the method
+            
+        Returns:
+            The result of the JSON-RPC call
+            
+        Raises:
+            Exception: Any exception that occurred during the call
+        """
+        if self.client is None:
+            raise RuntimeError("Client not initialized. Use 'async with' context manager.")
+        
+        params = params or {}
+        
+        try:
+            if self.debug:
+                print(f"Calling {method} with params: {params}")
+            
+            # Get the method from the client
+            client_method = getattr(self.client, method)
+            
+            # Call the method with the provided parameters
+            result = await client_method(**params)
+            
+            if self.debug:
+                print(f"Result from {method}: {result}")
+                
+            return result
+        except Exception as e:
+            if self.debug:
+                print(f"Error calling {method}: {str(e)}")
+            raise
+
     async def login(self, username: str, password: str) -> bool:
         """
         Log in to the JSON-RPC server.
@@ -64,8 +102,9 @@ class JSONRPC:
         Returns:
             True if login was successful
         """
-        return  await self.client.login(user='admin', passwd='admin')
-    
+        params = {"user": username, "passwd": password}
+        return await self._call("login", params)
+
     async def logout(self) -> bool:
         """
         Log out from the JSON-RPC server, invalidating the current session.
@@ -73,7 +112,7 @@ class JSONRPC:
         Returns:
             True if logout was successful
         """
-        return await self.client.logout()
+        return await self._call("logout")
     
     async def get_value(self, th: int, path: str) -> Any:
         """
@@ -86,12 +125,9 @@ class JSONRPC:
         Returns:
             The value at the specified path
         """
-        try:
-            response = await self.client.get_value(th=th, path=path)
-            return response['value']
-        except Exception as e:
-            print(f"get_value failed for path {path}: {str(e)}")
-            raise
+        params = {"th": th, "path": path}
+        response = await self._call("get_value", params)
+        return response['value']
     
     async def get_value_as_type(self, th: int, path: str, as_type: str = None) -> Any:
         """
@@ -107,7 +143,8 @@ class JSONRPC:
             The value at the specified path, or None if data not found
         """
         try:
-            response = await self.client.get_value(th=th, path=path)
+            params = {"th": th, "path": path}
+            response = await self._call("get_value", params)
             if response is None:
                 return None
             if as_type is str:
@@ -132,12 +169,9 @@ class JSONRPC:
         Returns:
             Dictionary mapping paths to their values
         """
-        try:
-            response = await self.client.get_values(th=th, path=path, leafs=leafs)
-            return response['values']
-        except Exception as e:
-            print(f"get_values failed: {str(e)}")
-            raise
+        params = {"th": th, "path": path, "leafs": leafs}
+        response = await self._call("get_values", params)
+        return response['values']
     
     async def get_attrs(self, th: int, path: str, names: list) -> Dict[str, Any]:
         """
@@ -151,12 +185,9 @@ class JSONRPC:
         Returns:
             Dictionary of attribute names and values
         """
-        try:
-            response = await self.client.get_attrs(th=th, path=path, names=names)
-            return response['attrs']
-        except Exception as e:
-            print(f"get_attrs failed for path {path}: {str(e)}")
-            raise
+        params = {"th": th, "path": path, "names": names}
+        response = await self._call("get_attrs", params)
+        return response['attrs']
     
     async def get_trans(self) -> str:
         """
@@ -165,12 +196,8 @@ class JSONRPC:
         Returns:
             The current transaction ID
         """
-        try:
-            response = await self.client.get_trans()
-            return response['trans']
-        except Exception as e:
-            print(f"get_trans failed: {str(e)}")
-            raise
+        response = await self._call("get_trans")
+        return response['trans']
     
     async def new_trans(self, mode: str = "read_write") -> str:
         """
@@ -183,12 +210,9 @@ class JSONRPC:
         Returns:
             The transaction ID of the new transaction
         """
-        try:
-            result = await self.client.new_trans(mode=mode)
-            return result['th']
-        except Exception as e:
-            print(f"new_trans failed: {str(e)}")
-            raise
+        params = {"mode": mode}
+        result = await self._call("new_trans", params)
+        return result['th']
     
     async def load(self, th: int, path: str, data: Union[str, dict], format: str = "json", mode: str = "merge") -> Dict[str, Any]:
         """
@@ -206,11 +230,8 @@ class JSONRPC:
         """
         if isinstance(data, dict):
             data = json.dumps(data)
-        try:
-            return await self.client.load(th=th, path=path, data=data, format=format, mode=mode)
-        except Exception as e:
-            print(f"load failed for path {path}: {str(e)}")
-            raise
+        params = {"th": th, "path": path, "data": data, "format": format, "mode": mode}
+        return await self._call("load", params)
     
     async def commit(self, th: int, flags: Optional[list] = None) -> Dict[str, Any]:
         """
@@ -225,12 +246,10 @@ class JSONRPC:
         Returns:
             Result of the commit operation
         """
-        params = {} if flags is None else {"flags": flags}
-        try:
-            return await self.client.commit(th=th, **params)
-        except Exception as e:
-            print(f"commit failed: {str(e)}")
-            raise
+        params = {"th": th}
+        if flags is not None:
+            params["flags"] = flags
+        return await self._call("commit", params)
     
     async def apply(self, th: int, flags: Optional[list] = None) -> Dict[str, Any]:
         """
@@ -243,26 +262,24 @@ class JSONRPC:
         Returns:
             Result of the apply operation
         """
-        params = {} if flags is None else {"flags": flags}
-        try:
-            return await self.client.apply(th=th, **params)
-        except Exception as e:
-            print(f"apply failed: {str(e)}")
-            raise
+        params = {"th": th}
+        if flags is not None:
+            params["flags"] = flags
+        return await self._call("apply", params)
     
     async def get_schema(self, th: int, path: Optional[str] = None, namespace: Optional[str] = None,
                        levels: int = -1, insert_values: bool = False, 
                        evaluate_when_entries: bool = False, stop_on_list: bool = True,
                        cdm_namespace: bool = False) -> Dict[str, Any]:
-        """
-        Get schema information for a specific path in the data model.
-        
-        Args:
-            th: Transaction handle (integer)
-            path: Optional path to the schema node
-            namespace: Optional namespace for the schema query
-            levels: Number of schema levels to retrieve (-1 for all levels)
-            insert_values: Whether to insert values in the schema
+        """schema levels to retrieve (-1 for all levels)
+
+
+
+
+
+
+
+            self.client = None            namespace: Optional namespace for the schema query            path: Optional path to the schema node            th: Transaction handle (integer)        Args:                Get schema information for a specific path in the data model.            insert_values: Whether to insert values in the schema
             evaluate_when_entries: Whether to evaluate 'when' entries
             stop_on_list: Whether to stop schema traversal on list nodes
             cdm_namespace: Whether to use CDM namespace
@@ -285,15 +302,42 @@ class JSONRPC:
         if namespace:
             params["namespace"] = namespace
         
-        try:
-            return await self.client.get_schema(**params)
-        except Exception as e:
-            path_info = f" for path {path}" if path else ""
-            print(f"get_schema failed{path_info}: {str(e)}")
-            raise
+        return await self._call("get_schema", params)
     
     async def close(self):
         """Close the HTTP session"""
         if self.client and hasattr(self.client, 'session') and self.client.session:
             await self.client.session.close()
             self.client = None
+
+
+    async def request(self, op, resource, data=None, jdata=None,
+                      resource_type='data', params=None):
+        if op =='create':
+            pass
+        elif op == 'read':
+            pass
+        elif op == 'update':
+            pass
+        elif op == 'delete':
+            pass
+        elif op == 'action':
+            pass
+    
+    async def run_action(self, th: int, path: str, input_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Run an action at the specified path.
+        
+        Args:
+            th: Transaction handle (integer)
+            path: Path to the action in the data model
+            input_params: Optional input parameters for the action
+            
+        Returns:
+            Result of the action operation, typically containing output parameters
+        """
+        params = {"th": th, "path": path}
+        if input_params:
+            params["params"] = input_params
+            
+        return await self._call("run_action", params)
