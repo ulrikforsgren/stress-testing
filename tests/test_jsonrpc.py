@@ -64,3 +64,25 @@ async def test_modify_read_timeout(jsonrpc_client):
     assert updated_timeout == new_timeout, f"Expected timeout value {new_timeout}, but got {updated_timeout}"
     
     print("\n===== Read-Timeout Modification Test Completed Successfully =====")
+
+
+@pytest.mark.asyncio
+async def test_modify_show_config(jsonrpc_client):
+    """Test reading and modifying the read-timeout value"""
+    print("\n===== Starting Read-Timeout Modification Test =====")
+    
+    # Create a write transaction
+    print("\nCreating write transaction...")
+    write_th = await jsonrpc_client.new_trans('read')
+    print(f"Write transaction handle: {write_th}")
+    
+    # Show config
+    result = await jsonrpc_client.show_config(write_th, '/python-service/service')
+    print("RESULT", result)
+    
+    # Delete transaction
+    print("\nDeleting write transaction...")
+    await jsonrpc_client.delete_trans(write_th)
+    assert False
+        
+    print("\n===== Show Config Test Completed Successfully =====")
