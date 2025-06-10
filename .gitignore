@@ -1,0 +1,4 @@
+venv/
+build/
+__pycache__
+stress_testing.egg-info
