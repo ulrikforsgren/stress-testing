@@ -312,7 +312,7 @@ class JSONRPC:
         params = {
             "th": th,
             "path": path,
-            "format": format
+            "result_as": format
         }
         
         if depth != -1:
@@ -403,13 +403,14 @@ class JSONRPC:
                 del_th_result = await self.delete_trans(th)
             elif op == 'delete':
                 th = await self.new_trans(mode='read_write')
-                result = await self.de(th, path=resource, params=jdata)
+                result = await self.delete(th, path=resource)
                 apply_result = await self.apply(th)
                 del_th_result = await self.delete_trans(th)
             elif op == 'action':
                 th = await self.new_trans(mode='read')
                 result = await self.run_action(th, path=resource, params=jdata)
                 del_th_result = await self.delete_trans(th)
+            return result
         except ProtocolError as e:
             if e.args[0] == -32000 and e.args[1] == 'Data not found':
                 return None
