@@ -5,7 +5,6 @@ from base64 import b64encode
 import json
 import aiohttp
 from yarl import URL
-import sys
 import logging
 
 logger = logging.getLogger(__name__)
@@ -138,6 +137,7 @@ class RESTCONF:
     # Exception:  (request-id, "exception", exception-object)
     #
 
+    # TODO: Simplify data/jdata handling, maybe use only jdata?
     async def request(self, op, resource, data=None, jdata=None,
                       resource_type='data', params=None):
         method, expected_status = REQ_DISPATCH[op]
