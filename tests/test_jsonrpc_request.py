@@ -2,11 +2,11 @@ import pytest
 import json
 
 # Service path and data constants
-SERVICE_PATH = "/python-service"
 SERVICE_NAME = "S1"
-SERVICE_PATH2 = "/python-service/service{S1}"
+SERVICE_PATH = "/python-service/service{S1}"
 
-# Initial service data
+# Create service data
+CREATE_SERVICE_PATH = "/python-service"
 SERVICE_DATA = {
     'service': [
         {
@@ -31,7 +31,7 @@ async def test_create_service(jsonrpc_client):
     # Create the service
     result = await jsonrpc_client.request(
         op='create',
-        resource=SERVICE_PATH,
+        resource=CREATE_SERVICE_PATH,
         data=SERVICE_DATA
     )
     assert result == {}, "Service creation failed, expected empty response"
@@ -56,7 +56,7 @@ async def test_update_service(jsonrpc_client):
     # Update the service
     result = await jsonrpc_client.request(
         op='update',
-        resource=SERVICE_PATH2,
+        resource=SERVICE_PATH,
         data=UPDATED_SERVICE_DATA
     )
     
