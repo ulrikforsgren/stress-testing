@@ -77,12 +77,14 @@ async def test_modify_show_config(jsonrpc_client):
     print(f"Write transaction handle: {write_th}")
     
     # Show config
-    result = await jsonrpc_client.show_config(write_th, '/python-service/service')
-    print("RESULT", result)
+    result = await jsonrpc_client.show_config(write_th, '/devices/global-settings')
+    assert 'data' in result, f"Expected 'data' in result, but got {result}"
+    assert 'tailf-ncs:devices' in result['data'], f"Expected 'tailf-ncs:devices' in result['data'], but got {result['data']}"
+    assert 'global-settings' in result['data']['tailf-ncs:devices'], f"Expected 'global-settings' in result['data']['tailf-ncs:devices'], but got {result['data']['tailf-ncs:devices']}"
+    assert 'read-timeout' in result['data']['tailf-ncs:devices']['global-settings'], f"Expected 'read-timeout' in result['data']['tailf-ncs:devices']['global-settings'], but got {result['data']['tailf-ncs:devices']['global-settings']}"
     
     # Delete transaction
     print("\nDeleting write transaction...")
     await jsonrpc_client.delete_trans(write_th)
-    assert False
         
     print("\n===== Show Config Test Completed Successfully =====")
