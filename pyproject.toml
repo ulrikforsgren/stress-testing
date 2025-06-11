@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stress-testing"
-version = "0.1.0"
-description = "Stress testing tools for JSON-RPC API"
+version = "0.1.2"
+description = "Stress testing tools for NSO Northbound API:s"
 authors = [
-    {name = "Developer", email = "developer@example.com"}
+    {name = Ulrik Stridsman", email = "uforsgre@cisco.com"}
 ]
 requires-python = ">=3.8"
 dependencies = [
