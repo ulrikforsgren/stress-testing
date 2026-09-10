@@ -134,7 +134,7 @@ class Sequence(Parameter):
         else:
             self.current += 1
             if self.wrap is not None:
-                self.current = self.current % self.wrap
+                self.current = self.n + (self.current - self.n) % self.wrap
 
     def reset(self):
         self.n = 0
@@ -164,7 +164,7 @@ class SequenceBatch(Sequence):
         else:
             self.current += 1
             if self.wrap is not None:
-                self.current = self.current % self.wrap
+                self.current = self.n + (self.current - self.n) % self.wrap
 
 
 class SequenceRequestRandomized(SequenceRequest):
@@ -343,7 +343,7 @@ class Calc(Parameter):
         return f'Calc(key={self.key}, mul{self.mul}, add={self.add}, current={self.current})' 
     
     def update_str(self, parameters):
-        i = parameters[self.key].n
+        i = parameters[self.key].current
         self.current = i//self.wrap*self.mul+self.add
     
     
