@@ -82,9 +82,12 @@ async def restconf_request(args, client, host, op, resource, data=None,
     rid = request_id
     method, expected_status = REQ_DISPATCH[op]
     url = f'http://{host}/restconf/{resource_type}{resource}'
-    if args.echo:
+    if args.echo or getattr(args, 'log_file', None):
         logger.debug(f'{rid}: {method} {url}')
-        if data: logger.debug(f'{rid}: {data}')
+        if query_parameters:
+            logger.debug(f'{rid}: params={query_parameters}')
+        if data:
+            logger.debug(f'{rid}: {data}')
     if not args.dry_run:
         try:
             if data is not None:
